@@ -170,6 +170,10 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import make_scorer, balanced_accuracy_score
 
 
+from sklearn.model_selection import GridSearchCV
+from sklearn.metrics import make_scorer, balanced_accuracy_score
+
+
 def optimize_pipeline(pipeline, x_train, y_train):
     """
     Optimiza el pipeline usando GridSearchCV y validación cruzada con 10 folds.
@@ -180,7 +184,7 @@ def optimize_pipeline(pipeline, x_train, y_train):
         y_train (Series): Etiquetas de entrenamiento.
 
     Returns:
-        Pipeline: Pipeline entrenado con los mejores hiperparámetros.
+        GridSearchCV: Objeto GridSearchCV optimizado.
     """
     # Definir métrica de optimización
     scoring = make_scorer(balanced_accuracy_score)
@@ -188,23 +192,19 @@ def optimize_pipeline(pipeline, x_train, y_train):
     # Espacio de hiperparámetros
     param_grid = {
         "classifier__n_estimators": [50, 100, 200],
-        "classifier__max_depth": [None, 5, 10, 20],
+        "classifier__max_depth": [None, 10, 20],
         "classifier__min_samples_split": [2, 5, 10],
-        "classifier__min_samples_leaf": [1, 2, 4],
     }
 
     # GridSearch con validación cruzada (10 folds)
     grid_search = GridSearchCV(
-        pipeline, param_grid, cv=10, scoring=scoring, n_jobs=-1, verbose=2, refit=True
+        pipeline, param_grid, cv=10, scoring=scoring, n_jobs=-1, verbose=2
     )
 
     # Ajustar el modelo
     grid_search.fit(x_train, y_train)
 
-    # Mejor modelo
-    best_pipeline = grid_search.best_estimator_
-
-    return best_pipeline
+    return grid_search
 
 
 import pickle
