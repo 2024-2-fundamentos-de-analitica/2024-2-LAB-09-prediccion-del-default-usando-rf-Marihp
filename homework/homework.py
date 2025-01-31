@@ -238,6 +238,10 @@ from sklearn.metrics import (
 import json
 
 
+import json
+import os
+
+
 def evaluate_model(
     model, x_train, y_train, x_test, y_test, file_path="files/output/metrics.json"
 ):
@@ -265,17 +269,31 @@ def evaluate_model(
         metrics.append(
             {
                 "dataset": dataset,
-                "precision": precision,
-                "balanced_accuracy": balanced_accuracy,
-                "recall": recall,
-                "f1_score": f1,
+                "precision": float(precision),
+                "balanced_accuracy": float(balanced_accuracy),
+                "recall": float(recall),
+                "f1_score": float(f1),
             }
         )
 
-    # Guardar en JSON
+    # Asegurar estructura correcta en JSON
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+    # Leer archivo si existe y tiene datos válidos
+    try:
+        with open(file_path, "r") as f:
+            existing_data = json.load(f)
+            if not isinstance(existing_data, list):
+                existing_data = []  # Si el contenido no es una lista, reiniciar
+    except (FileNotFoundError, json.JSONDecodeError):
+        existing_data = []  # Si hay un error al leer, reiniciar
+
+    # Agregar nuevas métricas
+    existing_data.extend(metrics)
+
+    # Guardar correctamente en JSON
     with open(file_path, "w") as f:
-        json.dump(metrics, f, indent=4)
+        json.dump(existing_data, f, indent=4)
 
     print(f"Métricas guardadas en {file_path}")
 
@@ -285,6 +303,9 @@ from sklearn.metrics import confusion_matrix
 
 import json
 import os
+from sklearn.metrics import confusion_matrix
+
+
 from sklearn.metrics import confusion_matrix
 
 
@@ -300,35 +321,38 @@ def save_confusion_matrix(
         x_test, y_test: Datos de prueba.
         file_path (str): Ruta del archivo JSON donde se guardarán las métricas.
     """
-    metrics = []
+    matrices = []
 
     for dataset, X, y in [("train", x_train, y_train), ("test", x_test, y_test)]:
         y_pred = model.predict(X)
         cm = confusion_matrix(y, y_pred)
 
-        # Convertir a int nativo de Python para evitar problemas con JSON
-        cm_dict = {
-            "type": "cm_matrix",
-            "dataset": dataset,
-            "true_0": {"predicted_0": int(cm[0, 0]), "predicted_1": int(cm[0, 1])},
-            "true_1": {"predicted_0": int(cm[1, 0]), "predicted_1": int(cm[1, 1])},
-        }
+        # Convertir valores de NumPy a int para JSON
+        matrices.append(
+            {
+                "type": "cm_matrix",
+                "dataset": dataset,
+                "true_0": {"predicted_0": int(cm[0, 0]), "predicted_1": int(cm[0, 1])},
+                "true_1": {"predicted_0": int(cm[1, 0]), "predicted_1": int(cm[1, 1])},
+            }
+        )
 
-        metrics.append(cm_dict)
-
-    # Guardar en JSON
+    # Asegurar estructura correcta en JSON
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
-    # Leer datos existentes para evitar sobrescribir
+    # Leer archivo si existe y tiene datos válidos
     try:
         with open(file_path, "r") as f:
             existing_data = json.load(f)
+            if not isinstance(existing_data, list):
+                existing_data = []  # Reiniciar si no es una lista
     except (FileNotFoundError, json.JSONDecodeError):
-        existing_data = []
+        existing_data = []  # Reiniciar si el archivo no existe o está corrupto
 
-    # Agregar nuevas métricas y guardar
-    existing_data.extend(metrics)
+    # Agregar matrices de confusión al JSON existente
+    existing_data.extend(matrices)
 
+    # Guardar correctamente en JSON
     with open(file_path, "w") as f:
         json.dump(existing_data, f, indent=4)
 
