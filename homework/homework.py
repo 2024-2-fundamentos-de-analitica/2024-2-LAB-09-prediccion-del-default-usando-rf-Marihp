@@ -156,7 +156,7 @@ def build_pipeline():
     )
 
     # Modelo Random Forest
-    random_forest_model = RandomForestClassifier(n_estimators=100, random_state=42)
+    random_forest_model = RandomForestClassifier(random_state=42)
 
     # Construcción del pipeline
     pipeline = Pipeline(
@@ -188,13 +188,14 @@ def optimize_pipeline(pipeline, x_train, y_train):
     # Espacio de hiperparámetros
     param_grid = {
         "classifier__n_estimators": [50, 100, 200],
-        "classifier__max_depth": [None, 10, 20],
+        "classifier__max_depth": [None, 5, 10, 20],
         "classifier__min_samples_split": [2, 5, 10],
+        "classifier__min_samples_leaf": [1, 2, 4],
     }
 
     # GridSearch con validación cruzada (10 folds)
     grid_search = GridSearchCV(
-        pipeline, param_grid, cv=10, scoring=scoring, n_jobs=-1, verbose=2
+        pipeline, param_grid, cv=10, scoring=scoring, n_jobs=-1, verbose=2, refit=True
     )
 
     # Ajustar el modelo
@@ -242,11 +243,22 @@ import json
 import os
 
 
+import os
+import json
+from sklearn.metrics import (
+    precision_score,
+    balanced_accuracy_score,
+    recall_score,
+    f1_score,
+    confusion_matrix,
+)
+
+
 def evaluate_model(
     model, x_train, y_train, x_test, y_test, file_path="files/output/metrics.json"
 ):
     """
-    Evalúa el modelo en los conjuntos de entrenamiento y prueba y guarda las métricas en un archivo JSON.
+    Evalúa el modelo en los conjuntos de entrenamiento y prueba y guarda las métricas y matrices de confusión en un archivo JSON.
 
     Args:
         model (Pipeline): Modelo entrenado.
@@ -254,109 +266,72 @@ def evaluate_model(
         x_test, y_test: Datos de prueba.
         file_path (str): Ruta del archivo JSON donde se guardarán las métricas.
     """
-    metrics = []
+    metrics = {}
 
-    for dataset, X, y in [("train", x_train, y_train), ("test", x_test, y_test)]:
-        y_pred = model.predict(X)
+    # Predicciones
+    y_train_pred = model.predict(x_train)
+    y_test_pred = model.predict(x_test)
 
-        # Calcular métricas
-        precision = precision_score(y, y_pred)
-        balanced_accuracy = balanced_accuracy_score(y, y_pred)
-        recall = recall_score(y, y_pred)
-        f1 = f1_score(y, y_pred)
+    # Métricas de entrenamiento
+    metrics["train"] = {
+        "type": "metrics",
+        "dataset": "train",
+        "precision": precision_score(y_train, y_train_pred, zero_division=0),
+        "balanced_accuracy": balanced_accuracy_score(y_train, y_train_pred),
+        "recall": recall_score(y_train, y_train_pred, zero_division=0),
+        "f1_score": f1_score(y_train, y_train_pred, zero_division=0),
+    }
 
-        # Guardar métricas en un diccionario
-        metrics.append(
-            {
-                "dataset": dataset,
-                "precision": float(precision),
-                "balanced_accuracy": float(balanced_accuracy),
-                "recall": float(recall),
-                "f1_score": float(f1),
-            }
-        )
+    # Métricas de prueba
+    metrics["test"] = {
+        "type": "metrics",
+        "dataset": "test",
+        "precision": precision_score(y_test, y_test_pred, zero_division=0),
+        "balanced_accuracy": balanced_accuracy_score(y_test, y_test_pred),
+        "recall": recall_score(y_test, y_test_pred, zero_division=0),
+        "f1_score": f1_score(y_test, y_test_pred, zero_division=0),
+    }
 
-    # Asegurar estructura correcta en JSON
+    # Matrices de confusión
+    cm_train = confusion_matrix(y_train, y_train_pred)
+    cm_test = confusion_matrix(y_test, y_test_pred)
+
+    metrics["train_cm"] = {
+        "type": "cm_matrix",
+        "dataset": "train",
+        "true_0": {
+            "predicted_0": int(cm_train[0][0]),
+            "predicted_1": int(cm_train[0][1]),
+        },
+        "true_1": {
+            "predicted_0": int(cm_train[1][0]),
+            "predicted_1": int(cm_train[1][1]),
+        },
+    }
+
+    metrics["test_cm"] = {
+        "type": "cm_matrix",
+        "dataset": "test",
+        "true_0": {
+            "predicted_0": int(cm_test[0][0]),
+            "predicted_1": int(cm_test[0][1]),
+        },
+        "true_1": {
+            "predicted_0": int(cm_test[1][0]),
+            "predicted_1": int(cm_test[1][1]),
+        },
+    }
+
+    # Guardar resultados en el archivo JSON
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
-    # Leer archivo si existe y tiene datos válidos
-    try:
-        with open(file_path, "r") as f:
-            existing_data = json.load(f)
-            if not isinstance(existing_data, list):
-                existing_data = []  # Si el contenido no es una lista, reiniciar
-    except (FileNotFoundError, json.JSONDecodeError):
-        existing_data = []  # Si hay un error al leer, reiniciar
-
-    # Agregar nuevas métricas
-    existing_data.extend(metrics)
-
-    # Guardar correctamente en JSON
     with open(file_path, "w") as f:
-        json.dump(existing_data, f, indent=4)
+        f.write(json.dumps(metrics["train"]) + "\n")
+        f.write(json.dumps(metrics["test"]) + "\n")
+        f.write(json.dumps(metrics["train_cm"]) + "\n")
+        f.write(json.dumps(metrics["test_cm"]) + "\n")
 
-    print(f"Métricas guardadas en {file_path}")
-
-
-from sklearn.metrics import confusion_matrix
-
-
-import json
-import os
-from sklearn.metrics import confusion_matrix
-
-
-from sklearn.metrics import confusion_matrix
-
-
-def save_confusion_matrix(
-    model, x_train, y_train, x_test, y_test, file_path="files/output/metrics.json"
-):
-    """
-    Calcula y guarda la matriz de confusión en el archivo JSON.
-
-    Args:
-        model (Pipeline): Modelo entrenado.
-        x_train, y_train: Datos de entrenamiento.
-        x_test, y_test: Datos de prueba.
-        file_path (str): Ruta del archivo JSON donde se guardarán las métricas.
-    """
-    matrices = []
-
-    for dataset, X, y in [("train", x_train, y_train), ("test", x_test, y_test)]:
-        y_pred = model.predict(X)
-        cm = confusion_matrix(y, y_pred)
-
-        # Convertir valores de NumPy a int para JSON
-        matrices.append(
-            {
-                "type": "cm_matrix",
-                "dataset": dataset,
-                "true_0": {"predicted_0": int(cm[0, 0]), "predicted_1": int(cm[0, 1])},
-                "true_1": {"predicted_0": int(cm[1, 0]), "predicted_1": int(cm[1, 1])},
-            }
-        )
-
-    # Asegurar estructura correcta en JSON
-    os.makedirs(os.path.dirname(file_path), exist_ok=True)
-
-    # Leer archivo si existe y tiene datos válidos
-    try:
-        with open(file_path, "r") as f:
-            existing_data = json.load(f)
-            if not isinstance(existing_data, list):
-                existing_data = []  # Reiniciar si no es una lista
-    except (FileNotFoundError, json.JSONDecodeError):
-        existing_data = []  # Reiniciar si el archivo no existe o está corrupto
-
-    # Agregar matrices de confusión al JSON existente
-    existing_data.extend(matrices)
-
-    # Guardar correctamente en JSON
-    with open(file_path, "w") as f:
-        json.dump(existing_data, f, indent=4)
-
-    print(f"Matriz de confusión guardada en {file_path}")
+    print(f"Métricas y matrices de confusión guardadas en {file_path}")
 
 
 # Construcción del Pipeline
@@ -370,6 +345,3 @@ save_model(best_pipeline)
 
 # Evaluación del modelo y guardado de métricas
 evaluate_model(best_pipeline, x_train, y_train, x_test, y_test)
-
-# Guardado de la matriz de confusión
-save_confusion_matrix(best_pipeline, x_train, y_train, x_test, y_test)
