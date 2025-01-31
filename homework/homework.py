@@ -144,7 +144,7 @@ def build_pipeline():
         Pipeline: pipeline entrenable.
     """
     # Variables categóricas a transformar
-    categorical_features = ["EDUCATION", "MARRIAGE"]
+    categorical_features = ["EDUCATION", "MARRIAGE", "SEX"]
 
     # One-Hot Encoding para variables categóricas
     categorical_transformer = OneHotEncoder(handle_unknown="ignore")

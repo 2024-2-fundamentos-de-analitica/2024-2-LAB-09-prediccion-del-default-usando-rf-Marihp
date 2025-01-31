@@ -1,78 +1,40 @@
 [
     {
         "dataset": "train",
-        "precision": 0.9971091839003781,
-        "balanced_accuracy": 0.9738971593879244,
-        "recall": 0.9485931880685424,
-        "f1_score": 0.9722463139635733
+        "precision": 0.9745788667687596,
+        "balanced_accuracy": 0.8340268736296836,
+        "recall": 0.6731542204357944,
+        "f1_score": 0.7962962962962963
     },
     {
         "dataset": "test",
-        "precision": 0.6470099667774086,
-        "balanced_accuracy": 0.6740659608875681,
-        "recall": 0.40806705081194344,
-        "f1_score": 0.5004818503051719
+        "precision": 0.665514261019879,
+        "balanced_accuracy": 0.6743881586077098,
+        "recall": 0.4033525405971713,
+        "f1_score": 0.502283105022831
     },
     {
         "type": "cm_matrix",
         "dataset": "train",
         "true_0": {
-            "predicted_0": 16260,
-            "predicted_1": 13
+            "predicted_0": 16190,
+            "predicted_1": 83
         },
         "true_1": {
-            "predicted_0": 243,
-            "predicted_1": 4484
+            "predicted_0": 1545,
+            "predicted_1": 3182
         }
     },
     {
         "type": "cm_matrix",
         "dataset": "test",
         "true_0": {
-            "predicted_0": 6666,
-            "predicted_1": 425
+            "predicted_0": 6704,
+            "predicted_1": 387
         },
         "true_1": {
-            "predicted_0": 1130,
-            "predicted_1": 779
-        }
-    },
-    {
-        "dataset": "train",
-        "precision": 0.9971091839003781,
-        "balanced_accuracy": 0.9738971593879244,
-        "recall": 0.9485931880685424,
-        "f1_score": 0.9722463139635733
-    },
-    {
-        "dataset": "test",
-        "precision": 0.6470099667774086,
-        "balanced_accuracy": 0.6740659608875681,
-        "recall": 0.40806705081194344,
-        "f1_score": 0.5004818503051719
-    },
-    {
-        "type": "cm_matrix",
-        "dataset": "train",
-        "true_0": {
-            "predicted_0": 16260,
-            "predicted_1": 13
-        },
-        "true_1": {
-            "predicted_0": 243,
-            "predicted_1": 4484
-        }
-    },
-    {
-        "type": "cm_matrix",
-        "dataset": "test",
-        "true_0": {
-            "predicted_0": 6666,
-            "predicted_1": 425
-        },
-        "true_1": {
-            "predicted_0": 1130,
-            "predicted_1": 779
+            "predicted_0": 1139,
+            "predicted_1": 770
         }
     }
 ]
