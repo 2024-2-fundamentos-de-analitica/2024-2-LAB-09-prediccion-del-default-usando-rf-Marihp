@@ -254,6 +254,17 @@ from sklearn.metrics import (
 )
 
 
+import os
+import json
+from sklearn.metrics import (
+    precision_score,
+    balanced_accuracy_score,
+    recall_score,
+    f1_score,
+    confusion_matrix,
+)
+
+
 def evaluate_model(
     model, x_train, y_train, x_test, y_test, file_path="files/output/metrics.json"
 ):
@@ -266,72 +277,70 @@ def evaluate_model(
         x_test, y_test: Datos de prueba.
         file_path (str): Ruta del archivo JSON donde se guardarán las métricas.
     """
-    metrics = {}
-
-    # Predicciones
-    y_train_pred = model.predict(x_train)
-    y_test_pred = model.predict(x_test)
-
-    # Métricas de entrenamiento
-    metrics["train"] = {
-        "type": "metrics",
-        "dataset": "train",
-        "precision": precision_score(y_train, y_train_pred, zero_division=0),
-        "balanced_accuracy": balanced_accuracy_score(y_train, y_train_pred),
-        "recall": recall_score(y_train, y_train_pred, zero_division=0),
-        "f1_score": f1_score(y_train, y_train_pred, zero_division=0),
-    }
-
-    # Métricas de prueba
-    metrics["test"] = {
-        "type": "metrics",
-        "dataset": "test",
-        "precision": precision_score(y_test, y_test_pred, zero_division=0),
-        "balanced_accuracy": balanced_accuracy_score(y_test, y_test_pred),
-        "recall": recall_score(y_test, y_test_pred, zero_division=0),
-        "f1_score": f1_score(y_test, y_test_pred, zero_division=0),
-    }
-
-    # Matrices de confusión
-    cm_train = confusion_matrix(y_train, y_train_pred)
-    cm_test = confusion_matrix(y_test, y_test_pred)
-
-    metrics["train_cm"] = {
-        "type": "cm_matrix",
-        "dataset": "train",
-        "true_0": {
-            "predicted_0": int(cm_train[0][0]),
-            "predicted_1": int(cm_train[0][1]),
-        },
-        "true_1": {
-            "predicted_0": int(cm_train[1][0]),
-            "predicted_1": int(cm_train[1][1]),
-        },
-    }
-
-    metrics["test_cm"] = {
-        "type": "cm_matrix",
-        "dataset": "test",
-        "true_0": {
-            "predicted_0": int(cm_test[0][0]),
-            "predicted_1": int(cm_test[0][1]),
-        },
-        "true_1": {
-            "predicted_0": int(cm_test[1][0]),
-            "predicted_1": int(cm_test[1][1]),
-        },
-    }
-
-    # Guardar resultados en el archivo JSON
+    # Crear directorio si no existe
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
+    # Abrir archivo en modo escritura
     with open(file_path, "w") as f:
-        f.write(json.dumps(metrics["train"]) + "\n")
-        f.write(json.dumps(metrics["test"]) + "\n")
-        f.write(json.dumps(metrics["train_cm"]) + "\n")
-        f.write(json.dumps(metrics["test_cm"]) + "\n")
+        # Predicciones
+        y_train_pred = model.predict(x_train)
+        y_test_pred = model.predict(x_test)
 
-    print(f"Métricas y matrices de confusión guardadas en {file_path}")
+        # Métricas de entrenamiento
+        train_metrics = {
+            "type": "metrics",
+            "dataset": "train",
+            "precision": precision_score(y_train, y_train_pred, zero_division=0),
+            "balanced_accuracy": balanced_accuracy_score(y_train, y_train_pred),
+            "recall": recall_score(y_train, y_train_pred, zero_division=0),
+            "f1_score": f1_score(y_train, y_train_pred, zero_division=0),
+        }
+        f.write(json.dumps(train_metrics) + "\n")
+
+        # Métricas de prueba
+        test_metrics = {
+            "type": "metrics",
+            "dataset": "test",
+            "precision": precision_score(y_test, y_test_pred, zero_division=0),
+            "balanced_accuracy": balanced_accuracy_score(y_test, y_test_pred),
+            "recall": recall_score(y_test, y_test_pred, zero_division=0),
+            "f1_score": f1_score(y_test, y_test_pred, zero_division=0),
+        }
+        f.write(json.dumps(test_metrics) + "\n")
+
+        # Matrices de confusión
+        cm_train = confusion_matrix(y_train, y_train_pred)
+        cm_test = confusion_matrix(y_test, y_test_pred)
+
+        train_cm = {
+            "type": "cm_matrix",
+            "dataset": "train",
+            "true_0": {
+                "predicted_0": int(cm_train[0][0]),
+                "predicted_1": int(cm_train[0][1]),
+            },
+            "true_1": {
+                "predicted_0": int(cm_train[1][0]),
+                "predicted_1": int(cm_train[1][1]),
+            },
+        }
+        f.write(json.dumps(train_cm) + "\n")
+
+        test_cm = {
+            "type": "cm_matrix",
+            "dataset": "test",
+            "true_0": {
+                "predicted_0": int(cm_test[0][0]),
+                "predicted_1": int(cm_test[0][1]),
+            },
+            "true_1": {
+                "predicted_0": int(cm_test[1][0]),
+                "predicted_1": int(cm_test[1][1]),
+            },
+        }
+        f.write(json.dumps(test_cm) + "\n")
+
+    print(f"Métricas y matrices de confusión guardadas correctamente en {file_path}")
 
 
 # Construcción del Pipeline
